@@ -5,12 +5,12 @@ import tensorflow as tf
 from models import GAT
 from utils import process
 
-checkpt_file = 'pre_trained/cora/mod_cora.ckpt'
+checkpt_file = 'pre_trained/apk/mod_apk.ckpt'
 
-dataset = 'cora'
+dataset = 'apk'
 
 # training params
-batch_size = 1
+batch_size = 100
 nb_epochs = 100000
 patience = 100
 lr = 0.005  # learning rate

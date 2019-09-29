@@ -72,10 +72,10 @@ def find_split(adj, mapping, ds_label):
                         else:
                             ind_label='train'
                         if dict_splits[mapping[i]]!= ind_label:
-                            print ('inconsistent labels within a graph exiting!!!')
+                            print('inconsistent labels within a graph exiting!!!')
                             return None
                 else:
-                    print ('label of both nodes different, exiting!!')
+                    print('label of both nodes different, exiting!!')
                     return None
     return dict_splits
 
@@ -85,10 +85,10 @@ def find_split(adj, mapping, ds_label):
 def process_p2p():
 
 
-    print ('Loading G...')
+    print('Loading G...')
     with open('p2p_dataset/ppi-G.json') as jsonfile:
         g_data = json.load(jsonfile)
-    print (len(g_data))
+    print(len(g_data))
     G = json_graph.node_link_graph(g_data)
 
     #Extracting adjacency matrix
@@ -97,22 +97,22 @@ def process_p2p():
     prev_key=''
     for key, value in g_data.items():
         if prev_key!=key:
-            print (key)
+            print(key)
             prev_key=key
 
-    print ('Loading id_map...')
+    print('Loading id_map...')
     with open('p2p_dataset/ppi-id_map.json') as jsonfile:
         id_map = json.load(jsonfile)
-    print (len(id_map))
+    print(len(id_map))
 
     id_map = {int(k):int(v) for k,v in id_map.items()}
     for key, value in id_map.items():
         id_map[key]=[value]
-    print (len(id_map))
+    print(len(id_map))
 
-    print ('Loading features...')
+    print('Loading features...')
     features_=np.load('p2p_dataset/ppi-feats.npy')
-    print (features_.shape)
+    print(features_.shape)
 
     #standarizing features
     from sklearn.preprocessing import StandardScaler
@@ -126,19 +126,19 @@ def process_p2p():
     features = sp.csr_matrix(features_).tolil()
 
 
-    print ('Loading class_map...')
+    print('Loading class_map...')
     class_map = {}
     with open('p2p_dataset/ppi-class_map.json') as jsonfile:
         class_map = json.load(jsonfile)
-    print (len(class_map))
+    print(len(class_map))
     
     #pdb.set_trace()
     #Split graph into sub-graphs
-    print ('Splitting graph...')
+    print('Splitting graph...')
     splits=dfs_split(adj)
 
     #Rearrange sub-graph index and append sub-graphs with 1 or 2 nodes to bigger sub-graphs
-    print ('Re-arranging sub-graph IDs...')
+    print('Re-arranging sub-graph IDs...')
     list_splits=splits.tolist()
     group_inc=1
 

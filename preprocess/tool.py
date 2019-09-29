@@ -2,6 +2,7 @@ from androguard.misc import AnalyzeAPK
 from androguard.core.analysis.analysis import ExternalMethod
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 import os
 
 
@@ -20,12 +21,12 @@ def delete_init_method(CFG,dx):
     for orig_method in nodes:
         m_a = dx.get_method(orig_method)
         ins_seq = get_instruction_seq_for_func(m_a, [str(n) for n in CFG.nodes])
-        if ins_seq[0] == ['invoke-direct','return-void']:#去除init函数
+        if ins_seq =='' or ins_seq[0] == ['invoke-direct','return-void']:#去除init函数
             CFG.remove_node(orig_method)
 
 
 def get_instruction_seq_for_func(m_a, nodes):
-    basic_blocks = m_a.basic_blocks
+    basic_blocks = m_a.basic_blocks.get()
 
     opcode_seq,api_seq = [],[]
     for i in basic_blocks:
@@ -36,10 +37,11 @@ def get_instruction_seq_for_func(m_a, nodes):
             if len(operands)>2:
                 api = str(operands[-1][-1])
                 if api not in nodes:api_seq.append(api)
-    return ' '.join([xx for x in [opcode_seq,api_seq] for xx in x]).replace(';','').lower()
+    text = ' '.join([xx for x in [opcode_seq,api_seq] for xx in x]).replace(';','').lower()
+    return text
 
 
-def get_graph_and_nodes_ins_for_apk(apk_file, draw_graph=False):
+def get_graph_and_nodes_ins_for_apk(apk_file, bc,draw_graph=False):
     a, d, dx = AnalyzeAPK(apk_file)
     CFG = dx.get_call_graph()
 
@@ -51,7 +53,7 @@ def get_graph_and_nodes_ins_for_apk(apk_file, draw_graph=False):
     for orig_method in nodes:
         m_a = dx.get_method(orig_method)
         ins_seq = get_instruction_seq_for_func(m_a, [str(n) for n in nodes])
-        ins_seqs[orig_method] = ins_seq
+        ins_seqs[orig_method] = bc.encode([ins_seq])
 
     if draw_graph:
         pos = nx.spring_layout(CFG)
@@ -60,19 +62,18 @@ def get_graph_and_nodes_ins_for_apk(apk_file, draw_graph=False):
         nx.draw_networkx_labels(CFG, pos=pos, labels={x: "{}".format(ins_seqs[x]) for x in nodes})
         plt.draw()
         plt.show()
-    return CFG, [ins_seqs[x] for x in CFG.nodes if x in ins_seqs]
+    methods = list(ins_seqs.keys())
+    adj_dict,L = CFG.adj,len(methods)
+    adj = [(i,1,j) for i in range(L) for j in range(L) if methods[j] in adj_dict[methods[i]].keys()]
+    node_feature = {}
+    for i in range(L):
+        if methods[i] in ins_seqs:
+            node_feature[i] = ins_seqs[methods[i]]
+    return adj,node_feature
 
 
-def get_data_for_word2vec(apk_dir, saved_file_path):
-    apk_files = os.listdir(apk_dir)
-    with open(saved_file_path,'a') as f:
-        for apk_file in apk_files:
-            print(apk_dir+apk_file)
-            portion = os.path.splitext(apk_file)
-            if portion[1] != ".apk":continue
-            CFG,node_txt = get_graph_and_nodes_ins_for_apk(apk_dir+apk_file)
-            [f.write(x+'\n') for x in node_txt]
-
-
-CFG,text = get_graph_and_nodes_ins_for_apk('../1.apk',True)
-a=2
+if __name__=='main':
+    from bert_serving.client import BertClient
+    bc = BertClient()
+    CFG,ins_seqs = get_graph_and_nodes_ins_for_apk('../1.apk',bc)
+    a=2
